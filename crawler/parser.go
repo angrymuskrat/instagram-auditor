@@ -46,7 +46,6 @@ func parseProfile(body []byte, id string, numPosts int) (profile *data.Profile, 
 	var result map[string]interface{}
 	err = json.Unmarshal(body, &result)
 	if err != nil {
-		unilog.Logger().Error(MsgGetNickname, zap.String("id", id))
 		return nil, err
 	}
 

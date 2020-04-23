@@ -12,11 +12,10 @@ import (
 func main() {
 	crawlerConfig := flag.String("cc", "crawler.toml", "path to db storage configuration file")
 	flag.Parse()
-	ids := readIds()
+	//ids := readIds()
 	if ids == nil {
 		return
 	}
-	writeBroken(ids)
 	cr := crawler.New(context.Background(), *crawlerConfig)
 	broken := cr.Start(context.Background(), ids)
 	writeBroken(broken)
@@ -52,3 +51,4 @@ func writeBroken(b []string) {
 		}
 	}
 }
+
