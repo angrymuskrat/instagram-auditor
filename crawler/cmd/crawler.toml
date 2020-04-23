@@ -1,0 +1,2 @@
+MongoUrl  = "mongodb://auditor:2qyecYf3gU@127.0.0.1:27017/instagramAuditor"
+TorPorts  = [9150, 9151, 9152, 9153, 9154]

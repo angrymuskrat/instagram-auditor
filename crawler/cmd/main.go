@@ -1,141 +1,54 @@
 package main
 
 import (
+	"bufio"
 	"context"
+	"flag"
 	"fmt"
 	"github.com/angrymuskrat/instagram-auditor/crawler"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
-	"time"
+	"os"
 )
 
-
 func main() {
-	cr := crawler.New([]int{9150, 9151, 9152, 9153, 9154, 9155, 9156, 9157, 9158, 9159})
-	cr.Start(ids)
+	crawlerConfig := flag.String("cc", "crawler.toml", "path to db storage configuration file")
+	flag.Parse()
+	ids := readIds()
+	if ids == nil {
+		return
+	}
+	writeBroken(ids)
+	cr := crawler.New(context.Background(), *crawlerConfig)
+	broken := cr.Start(context.Background(), ids)
+	writeBroken(broken)
 }
 
-func testMongo() error {
-	client, err := mongo.NewClient(options.Client().ApplyURI("mongodb://localhost:27017"))
+func readIds() []string {
+	readFile, err := os.Open("ids.txt")
 	if err != nil {
-		fmt.Println("1")
-		return err
+		fmt.Println(err)
+		return nil
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
-	err = client.Connect(ctx)
-	if err != nil {
-		return err
+
+	fileScanner := bufio.NewScanner(readFile)
+	fileScanner.Split(bufio.ScanLines)
+	var fileTextLines []string
+
+	for fileScanner.Scan() {
+		fileTextLines = append(fileTextLines, fileScanner.Text())
 	}
-	// Check the connection
-	err = client.Ping(ctx, nil)
-	if err != nil {
-		return err
-	}
-	return nil
+	return fileTextLines
 }
 
-
-
-var ids = []string{
-	"5580899299",
-	"520569446",
-	"4748853183",
-	"307466719",
-	"5541534461",
-	"4242592321",
-	"7018534078",
-	"1474126033",
-	"27067363242",
-	"8371422203",
-	"19582021031",
-	"1405428110",
-	"19608571977",
-	"1479932751",
-	"5476341153",
-	"3867083308",
-	"4325835871",
-	"3086150337",
-	"908266623",
-	"3777239819",
-	"9254766",
-	"1475078180",
-	"5559715253",
-	"145721468",
-	"6846338234",
-	"9623867029",
-	"1549848007",
-	"8556434598",
-	"1552871067",
-	"28646508257",
-	"942653651",
-	"363178996",
-	"8257035788",
-	"1491765418",
-	"735898802",
-	"2138051640",
-	"12252013903",
-	"3602892169",
-	"1466990911",
-	"2877591121",
-	"6019308090",
-	"2092531378",
-	"6152785835",
-	"1951304767",
-	"27665604411",
-	"9018527823",
-	"176496882",
-	"1425613725",
-	"499710809",
-	"8094061711",
-	"289169486",
-	"5516579993",
-	"1405660158",
-	"444160621",
-	"2151133829",
-	"329074070",
-	"346163629",
-	"19923596952",
-	"8788098000",
-	"2056206924",
-	"29367017208",
-	"2948499734",
-	"1327638772",
-	"7135555531",
-	"23290739720",
-	"21194603487",
-	"6788095004",
-	"1790193451",
-	"2210500964",
-	"524692708",
-	"483051098",
-	"3267949420",
-	"13207664223",
-	"321144741",
-	"572963936",
-	"29937971001",
-	"6941728090",
-	"12164755224",
-	"11112106991",
-	"2041433668",
-	"302157343",
-	"808726698",
-	"30810227427",
-	"4027183914",
-	"3069354910",
-	"567101983",
-	"9278597711",
-	"8281547983",
-	"5783223903",
-	"5743896872",
-	"2241778834",
-	"1005075424",
-	"1565866499",
-	"389678301",
-	"7928127485",
-	"6109141565",
-	"9263417117",
-	"3452785865",
-	"4130273633",
-	"28444620855",
+func writeBroken(b []string) {
+	f, err := os.Create("broken.txt")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	for _, s := range b {
+		_, err := f.WriteString(s + "\n")
+		if err != nil {
+			return
+		}
+	}
 }

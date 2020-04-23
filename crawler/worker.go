@@ -16,6 +16,7 @@ import (
 	"time"
 )
 const NumOfPosts = 10
+const WaitingTime = 10000
 var useTor = true
 
 type worker struct {
@@ -53,7 +54,6 @@ func (w *worker) init(port int) {
 func (w *worker) start() {
 	for e := range w.inCh {
 		nick, err := w.getNickname(e.id)
-		time.Sleep(50 * time.Millisecond)
 		if err != nil {
 			unilog.Logger().Error("don't be able to get nickname", zap.Error(err))
 			e.err = err
@@ -61,7 +61,6 @@ func (w *worker) start() {
 			continue
 		}
 		p, err := w.getProfile(nick, e.id)
-		time.Sleep(50 * time.Millisecond)
 		if err != nil {
 			unilog.Logger().Error("don't be able to get profile", zap.Error(err))
 			e.err = err
@@ -71,7 +70,6 @@ func (w *worker) start() {
 		e.err = nil
 		e.profile = p
 		w.outCh <- e
-		time.Sleep(250 * time.Millisecond)
 	}
 }
 
@@ -119,6 +117,7 @@ func (w *worker) getNickname(id string) (string, error) {
 }
 
 func (w *worker) makeRequest(request string, useTor bool) ([]byte, error) {
+	time.Sleep(WaitingTime * time.Millisecond)
 	req, err := http.NewRequest("GET", request, nil)
 	if err != nil {
 		unilog.Logger().Error("unable to create request", zap.String("URL", request), zap.Error(err))
