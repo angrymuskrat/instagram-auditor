@@ -16,7 +16,7 @@ import (
 	"time"
 )
 const NumOfPosts = 10
-const WaitingTime = 200
+const WaitingTime = 500
 
 type worker struct {
 	id    int
