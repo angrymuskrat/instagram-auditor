@@ -140,7 +140,5 @@ func (w *worker) makeRequest(request string) ([]byte, error) {
 		return nil, err
 	}
 	body, err := ioutil.ReadAll(resp.Body)
-
-	_ = ioutil.WriteFile("test_test.json", body, 0644)
 	return body, nil
 }
