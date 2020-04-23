@@ -16,22 +16,17 @@ import (
 	"time"
 )
 const NumOfPosts = 10
-const WaitingTime = 10000
-var useTor = true
+const WaitingTime = 200
 
 type worker struct {
 	id    int
 	inCh  chan entity
 	outCh chan entity
 	agent string
-	http  http.Client
 	tor   http.Client
 }
 
 func (w *worker) init(port int) {
-	w.http = http.Client{
-		Timeout: 30 * time.Second,
-	}
 	tbProxyURL, err := url.Parse("socks5://127.0.0.1:" + strconv.Itoa(port))
 	if err != nil {
 		return
@@ -79,7 +74,7 @@ func toBase64(buf []byte) string {
 
 func (w *worker) getProfile(nickname string, id string) (*data.Profile, error) {
 	request := "https://www.instagram.com/" + nickname + "/?__a=1"
-	body, err := w.makeRequest(request, useTor)
+	body, err := w.makeRequest(request)
 	if err != nil {
 		return nil, err
 	}
@@ -87,12 +82,12 @@ func (w *worker) getProfile(nickname string, id string) (*data.Profile, error) {
 	if err != nil {
 		return nil, err
 	}
-	profilePic, err := w.makeRequest(profile.ProfilePicUrl, useTor)
+	profilePic, err := w.makeRequest(profile.ProfilePicUrl)
 	if err == nil {
 		profile.ProfilePic = toBase64(profilePic)
 	}
 	for i, p := range profile.Posts {
-		pic, err := w.makeRequest(p.ImageUrl, useTor)
+		pic, err := w.makeRequest(p.ImageUrl)
 		if err == nil {
 			profile.Posts[i].Image = toBase64(pic)
 		}
@@ -104,7 +99,7 @@ func (w *worker) getNickname(id string) (string, error) {
 	templateAfter := "https://www.instagram.com/graphql/query/?query_hash=c9100bf9110dd6361671f113dd02e7d6&variables={%22user_id%22:%22"
 	templateBefore := "%22,%20%22include_reel%22:true}"
 	request := templateAfter + id + templateBefore
-	body, err := w.makeRequest(request, useTor)
+	body, err := w.makeRequest(request)
 	if err != nil {
 		return "", err
 	}
@@ -116,7 +111,7 @@ func (w *worker) getNickname(id string) (string, error) {
 	return nickname, nil
 }
 
-func (w *worker) makeRequest(request string, useTor bool) ([]byte, error) {
+func (w *worker) makeRequest(request string) ([]byte, error) {
 	time.Sleep(WaitingTime * time.Millisecond)
 	req, err := http.NewRequest("GET", request, nil)
 	if err != nil {
@@ -126,11 +121,8 @@ func (w *worker) makeRequest(request string, useTor bool) ([]byte, error) {
 	req.Header.Set("user-agent", w.agent)
 
 	var resp *http.Response
-	if useTor {
-		resp, err = w.tor.Do(req)
-	} else {
-		resp, err = w.http.Do(req)
-	}
+	resp, err = w.tor.Do(req)
+
 	if err != nil {
 		unilog.Logger().Error("unable to make request", zap.String("URL", request), zap.Error(err))
 		return nil, err
