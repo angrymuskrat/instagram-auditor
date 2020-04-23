@@ -14,6 +14,6 @@ type Post struct {
 	IsVideo         bool
 
 	ImageUrl        string
-	Image           []byte
+	Image           string
 	Caption         string
 }

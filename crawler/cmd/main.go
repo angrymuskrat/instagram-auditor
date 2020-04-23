@@ -8,7 +8,7 @@ func main() {
 	//id := "13460080"
 	port := 9151
 	cr := crawler.New(port)
-	cr.Start(ids, 10)
+	cr.Start([]string{"5580899299"}, 10)
 }
 
 var ids = []string{

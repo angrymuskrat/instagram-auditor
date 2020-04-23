@@ -18,7 +18,7 @@ type Profile struct {
 	ConnectedFbPage      bool
 
 	ProfilePicUrl string
-	ProfilePic    []byte
+	ProfilePic    string
 
 	PostsCount int
 	Posts      []Post

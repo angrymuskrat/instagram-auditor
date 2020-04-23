@@ -1,6 +1,7 @@
 package crawler
 
 import (
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"github.com/angrymuskrat/instagram-auditor/crawler/data"
@@ -60,6 +61,10 @@ func (w *worker) init(port int) {
 	}
 }*/
 
+func toBase64(buf []byte) string {
+	return base64.StdEncoding.EncodeToString(buf)
+}
+
 func (w *worker) getProfile(nickname string, id string, numPosts int) (*data.Profile, error) {
 	request := "https://www.instagram.com/" + nickname + "/?__a=1"
 	body, err := w.makeRequest(request, useTor)
@@ -67,6 +72,20 @@ func (w *worker) getProfile(nickname string, id string, numPosts int) (*data.Pro
 		return nil, err
 	}
 	profile, err := parseProfile(body, id, numPosts)
+	if err != nil {
+		return nil, err
+	}
+	profilePic, err := w.makeRequest(profile.ProfilePicUrl, useTor)
+	if err == nil {
+		profile.ProfilePic = toBase64(profilePic)
+		fmt.Println(toBase64(profilePic))
+	}
+	for i, p := range profile.Posts {
+		pic, err := w.makeRequest(p.ImageUrl, useTor)
+		if err == nil {
+			profile.Posts[i].Image = toBase64(pic)
+		}
+	}
 	return profile, err
 }
 
