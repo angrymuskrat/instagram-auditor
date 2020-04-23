@@ -1,15 +1,41 @@
 package main
 
 import (
+	"context"
+	"fmt"
 	"github.com/angrymuskrat/instagram-auditor/crawler"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"time"
 )
 
+
 func main() {
-	//id := "13460080"
-	port := 9151
-	cr := crawler.New(port)
-	cr.Start([]string{"5580899299"}, 10)
+	cr := crawler.New([]int{9150, 9151, 9152, 9153, 9154, 9155, 9156, 9157, 9158, 9159})
+	cr.Start(ids)
 }
+
+func testMongo() error {
+	client, err := mongo.NewClient(options.Client().ApplyURI("mongodb://localhost:27017"))
+	if err != nil {
+		fmt.Println("1")
+		return err
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	err = client.Connect(ctx)
+	if err != nil {
+		return err
+	}
+	// Check the connection
+	err = client.Ping(ctx, nil)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+
 
 var ids = []string{
 	"5580899299",

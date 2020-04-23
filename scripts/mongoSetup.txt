@@ -1,0 +1,8 @@
+use admin;
+db.createUser( { user: "useradmin", pwd: "?5:-Q}ULQ}hy6SEJ", roles: [ { role: "userAdminAnyDatabase", db: "admin" }]});
+
+sudo nano /etc/mongod.conf
+add security:
+        authorization: "enable"
+
+sudo service mongod restart

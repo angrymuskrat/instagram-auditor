@@ -15,17 +15,13 @@ import (
 	"strconv"
 	"time"
 )
-
+const NumOfPosts = 10
 var useTor = true
-
-type entity struct {
-	id        string
-	isProceed bool
-}
 
 type worker struct {
 	id    int
 	inCh  chan entity
+	outCh chan entity
 	agent string
 	http  http.Client
 	tor   http.Client
@@ -54,31 +50,48 @@ func (w *worker) init(port int) {
 	w.agent = uarand.GetRandom()
 }
 
-/*func (w *worker) start() {
+func (w *worker) start() {
 	for e := range w.inCh {
-		w.proceedProfile(e)
-		time.Sleep(2500 * time.Millisecond)
+		nick, err := w.getNickname(e.id)
+		time.Sleep(50 * time.Millisecond)
+		if err != nil {
+			unilog.Logger().Error("don't be able to get nickname", zap.Error(err))
+			e.err = err
+			w.outCh <- e
+			continue
+		}
+		p, err := w.getProfile(nick, e.id)
+		time.Sleep(50 * time.Millisecond)
+		if err != nil {
+			unilog.Logger().Error("don't be able to get profile", zap.Error(err))
+			e.err = err
+			w.outCh <- e
+			continue
+		}
+		e.err = nil
+		e.profile = p
+		w.outCh <- e
+		time.Sleep(250 * time.Millisecond)
 	}
-}*/
+}
 
 func toBase64(buf []byte) string {
 	return base64.StdEncoding.EncodeToString(buf)
 }
 
-func (w *worker) getProfile(nickname string, id string, numPosts int) (*data.Profile, error) {
+func (w *worker) getProfile(nickname string, id string) (*data.Profile, error) {
 	request := "https://www.instagram.com/" + nickname + "/?__a=1"
 	body, err := w.makeRequest(request, useTor)
 	if err != nil {
 		return nil, err
 	}
-	profile, err := parseProfile(body, id, numPosts)
+	profile, err := parseProfile(body, id, NumOfPosts)
 	if err != nil {
 		return nil, err
 	}
 	profilePic, err := w.makeRequest(profile.ProfilePicUrl, useTor)
 	if err == nil {
 		profile.ProfilePic = toBase64(profilePic)
-		fmt.Println(toBase64(profilePic))
 	}
 	for i, p := range profile.Posts {
 		pic, err := w.makeRequest(p.ImageUrl, useTor)
@@ -140,4 +153,3 @@ func (w *worker) makeRequest(request string, useTor bool) ([]byte, error) {
 	_ = ioutil.WriteFile("test_test.json", body, 0644)
 	return body, nil
 }
-
