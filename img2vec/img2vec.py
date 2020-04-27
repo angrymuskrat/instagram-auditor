@@ -6,7 +6,6 @@ class Image2Vec:
 
     def __init__(self, embedding_size=512):
         self.device = torch.device(torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu'))
-        self.model_name = model_name
 
         self.model = models.resnet18(pretrained=True)
         self.embedding_layer = self.model._modules.get('avgpool')
@@ -28,7 +27,7 @@ class Image2Vec:
         _ = self.model(image_tensor)
         h.remove()
 
-        if output == OUTPUT_TENSOR:
+        if output == self.OUTPUT_TENSOR:
             return tensor_vec
         else:
             return tensor_vec.numpy()[0, :, 0, 0]
@@ -36,13 +35,13 @@ class Image2Vec:
     def apply_batch(self, imgs, output=OUTPUT_VECTOR):
         images = torch.stack([self.normalize(self.to_tensor(self.scaler(img))) for img in imgs]).to(self.device)
 
-        tensor_vec = torch.zeros(1, self.emdedding_size, 1, 1)
+        tensor_vec = torch.zeros(len(imgs), self.emdedding_size, 1, 1)
 
         h = self.embedding_layer.register_forward_hook(lambda model, input, output: tensor_vec.copy_(output.data))
         _ = self.model(images)
         h.remove()
 
-        if output == OUTPUT_TENSOR:
+        if output == self.OUTPUT_TENSOR:
             return tensor_vec
         else:
             return tensor_vec.numpy()[:, :, 0, 0]
