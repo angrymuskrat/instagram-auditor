@@ -80,7 +80,7 @@ if __name__ == "__main__":
 
     def for_each_profile(do):
 
-        cursors = db.collection.parallel_scan(num_threads=4)
+        cursors = db.collection.parallel_scan(num_threads=4, num_cursors=4)
         threads = [threading.Thread(target=do, args=(cursor,)) for cursor in cursors]
 
         for thread in threads:
