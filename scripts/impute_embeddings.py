@@ -46,7 +46,7 @@ def add_embeddings(img2vec, profile):
     if posts in profile and len(profile[posts]) > 0:
         for post in profile[posts]:
             if image in post:
-                post[image_embedding] = img2vec.apply_single(to_pil(post[image]))
+                post[image_embedding] = img2vec.apply_single(to_pil(post[image])).tolist()
 
 
 if __name__ == "__main__":
@@ -71,23 +71,14 @@ if __name__ == "__main__":
             add_embeddings(img2vec, profile)
             profiles.update_one({'_id': profile['_id']}, 
                 {'$set': {
-                        profile_pic_embedding: profile[profile_pic_embedding], 
+                        profile_pic_embedding: profile[profile_pic_embedding].tolist(), 
                         posts: profile[posts]
                     }
                 },
                 upsert=True)
 
-
     def for_each_profile(do):
-
-        cursors = db.collection.parallel_scan(num_threads=4, num_cursors=4)
-        threads = [threading.Thread(target=do, args=(cursor,)) for cursor in cursors]
-
-        for thread in threads:
-            thread.start()
-
-        for thread in threads:
-            thread.join()
+        do(profiles.find())
 
     for_each_profile(do=vectorize_images)
 
