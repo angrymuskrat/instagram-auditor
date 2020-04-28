@@ -6,6 +6,7 @@ import sys
 sys.path.insert(0, '../img2vec/')
 from img2vec import Image2Vec
 import threading
+from time import time
 
 
 username = 'username'
@@ -66,8 +67,12 @@ if __name__ == "__main__":
     print("Image2vec instance created")
 
     def vectorize_images(cursor):
-        print(".")
+        start_time = time()
+        cnt = 0
         for profile in cursor.batch_size(200):
+            if cnt % 10 == 0:
+                print(f"Total elapsed time: {time() - start_time}")
+                print(f"Documents processed: {cnt}")
             add_embeddings(img2vec, profile)
             profiles.update_one({'_id': profile['_id']}, 
                 {'$set': {
@@ -76,6 +81,7 @@ if __name__ == "__main__":
                     }
                 },
                 upsert=True)
+            cnt += 1
 
     def for_each_profile(do):
         do(profiles.find())
