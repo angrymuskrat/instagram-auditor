@@ -7,6 +7,7 @@ sys.path.insert(0, '../img2vec/')
 from img2vec import Image2Vec
 import threading
 from time import time
+import logging
 
 
 username = 'username'
@@ -50,29 +51,55 @@ def add_embeddings(img2vec, profile):
                 post[image_embedding] = img2vec.apply_single(to_pil(post[image])).tolist()
 
 
-if __name__ == "__main__":
-        
+def setup_logging():
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.DEBUG)
+
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.WARNING)
+
+    file_handler = logging.FileHandler('instagramAuditor.log')
+    file_handler.setLevel(logging.DEBUG)
+
+    formatter = logging.Formatter('%(asctime)-15s - %(levelname)-5s - %(message)s')
+    console_handler.setFormatter(formatter)
+    file_handler.setFormatter(formatter)
+
+    logger.addHandler(console_handler)
+    logger.addHandler(file_handler)
+
+    return logger
+
+
+def setup_connection(logger):
+
     SERVER_IP = "213.136.94.240"
     USERNAME = "admin"
     PASSWORD = "04061997"
 
     client = MongoClient(host=SERVER_IP, username=USERNAME, password=PASSWORD)
-    print("Client established")
+    logger.info("Client established")
 
     db = client.instagramAuditor
     profiles = db.profiles
-    print("Collection retrieved")
+    logger.info("Collection retrieved")
 
+    return profiles
+
+
+def setup_img2vec(logger):
     img2vec = Image2Vec()
-    print("Image2vec instance created")
+    logger.info("Image2vec instance created")
 
-    def vectorize_images(cursor):
-        start_time = time()
-        cnt = 0
-        for profile in cursor.batch_size(200):
-            if cnt % 10 == 0:
-                print(f"Total elapsed time: {time() - start_time}")
-                print(f"Documents processed: {cnt}")
+    return img2vec
+
+
+def vectorize_images(cursor, img2vec, logger):
+    start_time = time()
+    cnt = 0
+    errors_in_profiles = []
+    for profile in cursor.batch_size(200):
+        try:
             add_embeddings(img2vec, profile)
             profiles.update_one({'_id': profile['_id']}, 
                 {'$set': {
@@ -81,14 +108,24 @@ if __name__ == "__main__":
                     }
                 },
                 upsert=True)
+        except Exception as e:
+            logger.exception(e)
+            logger.debug("Profile: ", profile)
+            errors_in_profiles.append(profile[username])
+        finally:
+            level = logging.WARNING if cnt % 100 == 0 else logging.DEBUG
+            logger.log(level, f"Total elapsed time: {time() - start_time}")
+            logger.log(level, f"Documents processed: {cnt}")
             cnt += 1
 
-    def for_each_profile(do):
-        do(profiles.find())
 
-    for_each_profile(do=vectorize_images)
-
+def for_each_profile(do, profiles, img2vec, logger):
+    do(profiles.find(), img2vec, logger)
 
 
+if __name__ == "__main__":
+    logger = setup_logging()
+    profiles = setup_connection(logger)
+    img2vec = setup_img2vec(logger)
 
-
+    for_each_profile(do=vectorize_images, profiles=profiles, img2vec=img2vec, logger=logger)
