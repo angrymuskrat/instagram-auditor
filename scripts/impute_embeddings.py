@@ -113,10 +113,10 @@ def vectorize_images(cursor, img2vec, logger):
             logger.debug("Profile: ", profile)
             errors_in_profiles.append(profile[username])
         finally:
+            cnt += 1
             level = logging.WARNING if cnt % 100 == 0 else logging.DEBUG
             logger.log(level, f"Total elapsed time: {time() - start_time}")
             logger.log(level, f"Documents processed: {cnt}")
-            cnt += 1
 
 
 def for_each_profile(do, profiles, img2vec, logger):
